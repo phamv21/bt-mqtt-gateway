@@ -102,22 +102,32 @@ class lywsd03mmc:
         return self._temperature, self._humidity, self._battery
 
     def getTemperature(self):
-        return self._temperature;
+        return self._temperature
 
     def getHumidity(self):
-        return self._humidity;
+        return self._humidity
 
     def getBattery(self):
-        return self._battery;
+        return self._battery
 
     def subscribe(self, device):
         device.setDelegate(self)
 
     def processScanValue(self, data):
-        temperature = int(data[16:20], 16) / 10
-        humidity = int(data[20:22], 16)
-        battery = int(data[22:24], 16)
-
+        preeamble = "1a18"
+        packetStart = data.find(preeamble)
+        offset = packetStart + len(preeamble)
+        strippedData_str = data[offset:offset+26] #if shorter will just be shorter then 13 Bytes
+        #strippedData_str = data[offset:] #if shorter will just be shorter then 13 Bytes
+        #temperature = int(data[12:16], 16) / 10
+        temperature = int.from_bytes(bytearray.fromhex(strippedData_str[12:16]),byteorder='big',signed=True) / 10.
+        #humidity = int(data[26:28], 16)
+        #battery = int(data[28:30], 16)
+        #humidity = int.from_bytes(bytearray.fromhex(strippedData_str[12:16]), byteorder='big', signed=True) / 10
+        humidity = int(strippedData_str[16:18], 16)
+        #battery = int.from_bytes(bytearray.fromhex(strippedData_str[24:26]), byteorder='little', signed=False)
+        battery = int(strippedData_str[18:20], 16)
+        #battery = len(strippedData_str)
         self._temperature = round(temperature, 1)
         self._humidity = round(humidity)
         self._battery = round(battery, 4)
@@ -127,6 +137,6 @@ class lywsd03mmc:
         humidity = int.from_bytes(data[2:3], byteorder='little')
         battery = int.from_bytes(data[3:5], byteorder='little') / 1000
 
-        self._temperature = round(temperature, 1)
-        self._humidity = round(humidity)
+        self._temperature = round(temperature, 2)
+        self._humidity = round(humidity, 2)
         self._battery = round(battery, 4)
